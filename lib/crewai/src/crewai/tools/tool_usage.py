@@ -787,17 +787,6 @@ class ToolUsage:
             arguments = json.loads(tool_input)
             if isinstance(arguments, dict):
                 return arguments
-            elif isinstance(arguments, list) and len(arguments) >= 2:
-                # Handle the case where LLM returns [ {}, {"args": {...}} ]
-                # This can happen when the LLM is confused about the format
-                # Extract the second element which should contain the actual arguments
-                second_element = arguments[1] if len(arguments) > 1 else arguments[0]
-                if isinstance(second_element, dict) and "args" in second_element:
-                    # Return the args dictionary
-                    return second_element["args"]
-                elif isinstance(second_element, dict):
-                    # If there's no "args" key, return the dictionary itself
-                    return second_element
         except (JSONDecodeError, TypeError):
             pass  # Continue to the next parsing attempt
 
@@ -806,16 +795,6 @@ class ToolUsage:
             arguments = ast.literal_eval(tool_input)
             if isinstance(arguments, dict):
                 return arguments
-            elif isinstance(arguments, list) and len(arguments) >= 2:
-                # Handle the case where LLM returns [ {}, {"args": {...}} ]
-                # Extract the second element which should contain the actual arguments
-                second_element = arguments[1] if len(arguments) > 1 else arguments[0]
-                if isinstance(second_element, dict) and "args" in second_element:
-                    # Return the args dictionary
-                    return second_element["args"]
-                elif isinstance(second_element, dict):
-                    # If there's no "args" key, return the dictionary itself
-                    return second_element
         except (ValueError, SyntaxError):
             repaired_input = repair_json(tool_input)
             # Continue to the next parsing attempt
@@ -825,16 +804,6 @@ class ToolUsage:
             arguments = json5.loads(tool_input)
             if isinstance(arguments, dict):
                 return arguments
-            elif isinstance(arguments, list) and len(arguments) >= 2:
-                # Handle the case where LLM returns [ {}, {"args": {...}} ]
-                # Extract the second element which should contain the actual arguments
-                second_element = arguments[1] if len(arguments) > 1 else arguments[0]
-                if isinstance(second_element, dict) and "args" in second_element:
-                    # Return the args dictionary
-                    return second_element["args"]
-                elif isinstance(second_element, dict):
-                    # If there's no "args" key, return the dictionary itself
-                    return second_element
         except (JSONDecodeError, ValueError, TypeError):
             pass  # Continue to the next parsing attempt
 
@@ -847,16 +816,6 @@ class ToolUsage:
             arguments = json.loads(repaired_input)
             if isinstance(arguments, dict):
                 return arguments
-            elif isinstance(arguments, list) and len(arguments) >= 2:
-                # Handle the case where LLM returns [ {}, {"args": {...}} ]
-                # Extract the second element which should contain the actual arguments
-                second_element = arguments[1] if len(arguments) > 1 else arguments[0]
-                if isinstance(second_element, dict) and "args" in second_element:
-                    # Return the args dictionary
-                    return second_element["args"]
-                elif isinstance(second_element, dict):
-                    # If there's no "args" key, return the dictionary itself
-                    return second_element
         except Exception as e:
             error = f"Failed to repair JSON: {e}"
             self._printer.print(content=error, color="red")
