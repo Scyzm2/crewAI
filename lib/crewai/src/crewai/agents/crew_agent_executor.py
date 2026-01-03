@@ -219,8 +219,10 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             Final answer from the agent.
         """
         formatted_answer = None
+        print(f"DEBUG: Starting invoke loop, iteration 0")
         while not isinstance(formatted_answer, AgentFinish):
             try:
+                print(f"DEBUG: Starting iteration {self.iterations}")
                 if has_reached_max_iterations(self.iterations, self.max_iter):
                     formatted_answer = handle_max_iterations_exceeded(
                         formatted_answer,
@@ -391,8 +393,10 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             Final answer from the agent.
         """
         formatted_answer = None
+        print(f"DEBUG: Starting async invoke loop, iteration 0")
         while not isinstance(formatted_answer, AgentFinish):
             try:
+                print(f"DEBUG: Starting async iteration {self.iterations}")
                 if has_reached_max_iterations(self.iterations, self.max_iter):
                     formatted_answer = handle_max_iterations_exceeded(
                         formatted_answer,
@@ -516,6 +520,8 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
         Returns:
             Updated action or final answer.
         """
+        print(f"DEBUG: _handle_agent_action called with tool_result: {tool_result.result[:100]}")
+        
         # Special case for add_image_tool
         add_image_tool = self._i18n.tools("add_image")
         if (
@@ -538,13 +544,19 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
 
         # Process the tool result using the core handler
-        result = handle_agent_action_core(
-            formatted_answer=formatted_answer,
-            tool_result=tool_result,
-            messages=self.messages,
-            step_callback=self.step_callback,
-            show_logs=self._show_logs,
-        )
+        try:
+            result = handle_agent_action_core(
+                formatted_answer=formatted_answer,
+                tool_result=tool_result,
+                messages=self.messages,
+                step_callback=self.step_callback,
+                show_logs=self._show_logs,
+            )
+        except Exception as e:
+            print(f"DEBUG: Exception in handle_agent_action_core: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         
         print(f"DEBUG: After handle_agent_action_core, result type: {type(result)}")
         
