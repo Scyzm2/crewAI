@@ -236,9 +236,17 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
                 enforce_rpm_limit(self.request_within_rpm_limit)
                 
-                print(f"DEBUG: About to call LLM with {len(self.messages)} messages:")
+                # Add debug information to messages to help diagnose the issue
+                debug_info = f"\n\n=== DEBUG INFO ===\nMessage history before LLM call ({len(self.messages)} messages):\n"
                 for i, msg in enumerate(self.messages):
-                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    debug_info += f"[{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}\n"
+                debug_info += "===================\n"
+                
+                # Temporarily add debug info to the last message
+                if self.messages:
+                    last_msg = self.messages[-1]
+                    original_content = last_msg.get('content', '')
+                    last_msg['content'] = original_content + debug_info
                 
                 answer = get_llm_response(
                     llm=self.llm,
@@ -250,6 +258,13 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     response_model=self.response_model,
                     executor_context=self,
                 )
+                
+                # Restore original content
+                if self.messages:
+                    last_msg = self.messages[-1]
+                    original_content = last_msg.get('content', '')
+                    if debug_info in original_content:
+                        last_msg['content'] = original_content.replace(debug_info, '')
                 formatted_answer = process_llm_response(answer, self.use_stop_words)  # type: ignore[assignment]
 
                 if isinstance(formatted_answer, AgentAction):
@@ -410,9 +425,17 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
                 enforce_rpm_limit(self.request_within_rpm_limit)
                 
-                print(f"DEBUG: About to call LLM (async) with {len(self.messages)} messages:")
+                # Add debug information to messages to help diagnose the issue
+                debug_info = f"\n\n=== DEBUG INFO ===\nMessage history before LLM call (async) ({len(self.messages)} messages):\n"
                 for i, msg in enumerate(self.messages):
-                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    debug_info += f"[{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}\n"
+                debug_info += "===================\n"
+                
+                # Temporarily add debug info to the last message
+                if self.messages:
+                    last_msg = self.messages[-1]
+                    original_content = last_msg.get('content', '')
+                    last_msg['content'] = original_content + debug_info
                 
                 answer = await aget_llm_response(
                     llm=self.llm,
@@ -424,6 +447,13 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     response_model=self.response_model,
                     executor_context=self,
                 )
+                
+                # Restore original content
+                if self.messages:
+                    last_msg = self.messages[-1]
+                    original_content = last_msg.get('content', '')
+                    if debug_info in original_content:
+                        last_msg['content'] = original_content.replace(debug_info, '')
                 formatted_answer = process_llm_response(answer, self.use_stop_words)  # type: ignore[assignment]
 
                 if isinstance(formatted_answer, AgentAction):
