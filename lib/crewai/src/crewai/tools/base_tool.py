@@ -299,13 +299,45 @@ class BaseTool(BaseModel, ABC):
 
     def _generate_description(self) -> None:
         """Generate the tool description with a JSON schema for arguments."""
-        schema = generate_model_description(self.args_schema)
-        args_json = json.dumps(schema["json_schema"]["schema"], indent=2)
+        # Only generate description if it hasn't been updated yet
+        # This prevents double-generation when model_post_init is called multiple times
+        if self.description_updated:
+            return
+        
+        # Generate the JSON schema from the Pydantic model
+        # We use model_json_schema() directly instead of generate_model_description()
+        # to avoid the ensure_all_properties_required transformation which forces
+        # all fields to be required (including those with defaults)
+        json_schema = self.args_schema.model_json_schema(ref_template="#/$defs/{model}")
+        
+        # Resolve any $refs
+        from crewai.utilities.pydantic_schema_utils import resolve_refs
+        json_schema = resolve_refs(json_schema)
+        
+        # Remove $defs
+        json_schema.pop("$defs", None)
+        
+        # Convert oneOf to anyOf for OpenAI compatibility
+        from crewai.utilities.pydantic_schema_utils import convert_oneof_to_anyof
+        json_schema = convert_oneof_to_anyof(json_schema)
+        
+        # Add additionalProperties: false for strict mode
+        from crewai.utilities.pydantic_schema_utils import add_key_in_dict_recursively
+        json_schema = add_key_in_dict_recursively(
+            json_schema,
+            key="additionalProperties",
+            value=False,
+            criteria=lambda d: d.get("type") == "object"
+            and "additionalProperties" not in d,
+        )
+        
+        args_json = json.dumps(json_schema, indent=2)
         self.description = (
             f"Tool Name: {self.name}\n"
             f"Tool Arguments: {args_json}\n"
             f"Tool Description: {self.description}"
         )
+        self.description_updated = True
 
 
 class Tool(BaseTool, Generic[P, R]):

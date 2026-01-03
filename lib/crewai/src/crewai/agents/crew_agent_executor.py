@@ -278,7 +278,12 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     )
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
-                self._append_message(formatted_answer.text)  # type: ignore[union-attr,attr-defined]
+                # Append tool observations as user messages, not assistant messages
+                # This prevents "Cannot set add_generation_prompt to True when the last message is from the assistant" error
+                if isinstance(formatted_answer, AgentAction):
+                    self._append_message(formatted_answer.text, role="user")  # type: ignore[union-attr,attr-defined]
+                else:
+                    self._append_message(formatted_answer.text)  # type: ignore[union-attr,attr-defined]
 
             except OutputParserError as e:
                 formatted_answer = handle_output_parser_exception(  # type: ignore[assignment]
@@ -431,7 +436,12 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     )
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
-                self._append_message(formatted_answer.text)  # type: ignore[union-attr,attr-defined]
+                # Append tool observations as user messages, not assistant messages
+                # This prevents "Cannot set add_generation_prompt to True when the last message is from the assistant" error
+                if isinstance(formatted_answer, AgentAction):
+                    self._append_message(formatted_answer.text, role="user")  # type: ignore[union-attr,attr-defined]
+                else:
+                    self._append_message(formatted_answer.text)  # type: ignore[union-attr,attr-defined]
 
             except OutputParserError as e:
                 formatted_answer = handle_output_parser_exception(  # type: ignore[assignment]
