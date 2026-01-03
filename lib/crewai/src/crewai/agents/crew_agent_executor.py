@@ -496,6 +496,10 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             self.messages.append({"role": "assistant", "content": tool_result.result})
             return formatted_answer
 
+        # Add the assistant message with the tool call to the message history
+        # This is necessary for proper tool call tracking in the conversation
+        self.messages.append({"role": "assistant", "content": formatted_answer.text})
+
         # Process the tool result using the core handler
         result = handle_agent_action_core(
             formatted_answer=formatted_answer,
@@ -510,22 +514,10 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
         # when the last message is from the assistant" error
         if isinstance(result, AgentAction):
             # Add the tool result as a tool message
-            # We need to extract the tool call ID from the assistant message
-            # For simplicity, we'll use a generic approach that works with most LLM providers
             tool_message = {
                 "role": "tool",
                 "content": tool_result.result,
             }
-            # Try to get the tool call ID from the last assistant message if it exists
-            if self.messages and self.messages[-1].get("role") == "assistant":
-                # Check if the last message has tool_calls
-                if "tool_calls" in self.messages[-1] and self.messages[-1]["tool_calls"]:
-                    tool_call = self.messages[-1]["tool_calls"][0]
-                    if "id" in tool_call:
-                        tool_message["tool_call_id"] = tool_call["id"]
-                # If no tool_calls, check for a simple tool call format
-                elif "tool_call_id" in self.messages[-1]:
-                    tool_message["tool_call_id"] = self.messages[-1]["tool_call_id"]
             
             self.messages.append(tool_message)
         
