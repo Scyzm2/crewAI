@@ -13,5 +13,5 @@ class LLMMessage(TypedDict):
           instead of str | list[dict[str, str]]
     """
 
-    role: Literal["user", "assistant", "system"]
+    role: Literal["user", "assistant", "system", "tool"]
     content: str | list[dict[str, Any]]
