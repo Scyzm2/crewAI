@@ -485,7 +485,18 @@ def handle_output_parser_exception(
     Returns:
         AgentAction: A formatted answer with the error
     """
-    messages.append({"role": "user", "content": e.error})
+    # Check if the last message is a tool message
+    # If so, we cannot add a user message (OpenAI API restriction)
+    # Instead, we'll add the error to the previous assistant message or skip it
+    if messages and messages[-1].get("role") == "tool":
+        # Last message is a tool message, cannot add user message after it
+        # Option 1: Add error to the previous assistant message
+        # Option 2: Skip adding the error and let the agent continue
+        # We'll choose Option 2 to avoid breaking the conversation flow
+        pass  # Don't add any message
+    else:
+        # Last message is not a tool message, safe to add user message
+        messages.append({"role": "user", "content": e.error})
 
     formatted_answer = AgentAction(
         text=e.error,
