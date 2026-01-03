@@ -209,6 +209,9 @@ def format_answer(answer: str) -> AgentAction | AgentFinish:
     """
     try:
         return parse(answer)
+    except OutputParserError:
+        # Re-raise OutputParserError to allow callers to handle it
+        raise
     except Exception:
         return AgentFinish(
             thought="Failed to parse LLM response",
@@ -353,12 +356,51 @@ def process_llm_response(
     if not use_stop_words:
         try:
             # Preliminary parsing to check for errors.
-            format_answer(answer)
+            return format_answer(answer)
         except OutputParserError as e:
             if FINAL_ANSWER_AND_PARSABLE_ACTION_ERROR_MESSAGE in e.error:
                 answer = answer.split("Observation:")[0].strip()
+                return format_answer(answer)
+            else:
+                # If the format is invalid, try to extract a tool call or final answer
+                # from common LLM formatting mistakes
+                import re
+                
+                # Check for [TOOL_CALLS] prefix which is a common LLM mistake
+                tool_call_match = re.search(r'\[TOOL_CALLS\](\w+)(\{.*?\})', answer, re.DOTALL)
+                if tool_call_match:
+                    tool_name = tool_call_match.group(1)
+                    tool_input = tool_call_match.group(2)
+                    # Reformat as proper CrewAI action
+                    answer = f"Thought: Using tool {tool_name}\nAction: {tool_name}\nAction Input: {tool_input}"
+                    return format_answer(answer)
+                else:
+                    # Check for Python-style function calls
+                    func_call_match = re.search(r'(\w+)(\(.*?\))', answer)
+                    if func_call_match:
+                        tool_name = func_call_match.group(1)
+                        tool_args = func_call_match.group(2)
+                        # Try to convert to JSON format
+                        try:
+                            # Simple conversion: key=value to {"key": "value"}
+                            args_dict = {}
+                            for arg in tool_args.split(','):
+                                if '=' in arg:
+                                    key, value = arg.split('=', 1)
+                                    key = key.strip()
+                                    value = value.strip().strip('"').strip("'")
+                                    args_dict[key] = value
+                            import json
+                            answer = f"Thought: Using tool {tool_name}\nAction: {tool_name}\nAction Input: {json.dumps(args_dict)}"
+                            return format_answer(answer)
+                        except:
+                            # If conversion fails, just use the raw text as a final answer
+                            pass
 
+    # Fallback: try to parse the answer as-is
     return format_answer(answer)
+
+
 
 
 def handle_agent_action_core(
