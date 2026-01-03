@@ -239,6 +239,10 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 if self.messages:
                     print(f"DEBUG: Last message: {self.messages[-1]}")
 
+                print(f"DEBUG: About to call LLM - Message history before call:")
+                for i, msg in enumerate(self.messages):
+                    print(f"DEBUG:   [{i}] {msg.get('role', 'unknown')}: {msg.get('content', '')[:100]}...")
+                
                 answer = get_llm_response(
                     llm=self.llm,
                     messages=self.messages,
@@ -253,6 +257,7 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
                 if isinstance(formatted_answer, AgentAction):
                     print(f"DEBUG: Executing tool: {formatted_answer.tool}")
+                    print(f"DEBUG: LLM returned AgentAction with text: {formatted_answer.text[:200]}")
                     # Extract agent fingerprint if available
                     fingerprint_context = {}
                     if (
@@ -267,6 +272,7 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                         }
 
                     print(f"DEBUG: About to execute tool and check finality")
+                    print(f"DEBUG: Before tool execution - formatted_answer.text: {formatted_answer.text[:200]}")
                     tool_result = execute_tool_and_check_finality(
                         agent_action=formatted_answer,
                         fingerprint_context=fingerprint_context,
@@ -280,11 +286,13 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                         function_calling_llm=self.function_calling_llm,
                         crew=self.crew,
                     )
+                    print(f"DEBUG: Tool result: {tool_result.result[:200]}")
+                    print(f"DEBUG: Tool result_as_answer: {tool_result.result_as_answer}")
                     formatted_answer = self._handle_agent_action(
                         formatted_answer, tool_result
                     )
-                    print(f"DEBUG: Tool execution completed, formatted_answer type: {type(formatted_answer)}")
-                    print(f"DEBUG: formatted_answer.text: {formatted_answer.text[:200]}")
+                    print(f"DEBUG: After _handle_agent_action, formatted_answer type: {type(formatted_answer)}")
+                    print(f"DEBUG: After _handle_agent_action, formatted_answer.text: {formatted_answer.text[:400]}")
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # Append tool observations as user messages, not assistant messages
@@ -299,6 +307,12 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     print(f"DEBUG: Appending as ASSISTANT message")
                     self._append_message(formatted_answer.text)  # type: ignore[union-attr,attr-defined]
                 print(f"DEBUG: Last message in history: {self.messages[-1] if self.messages else 'NO MESSAGES'}")
+                print(f"DEBUG: Full message history after append:")
+                for i, msg in enumerate(self.messages):
+                    print(f"DEBUG:   [{i}] {msg.get('role', 'unknown')}: {msg.get('content', '')[:100]}...")
+                print(f"DEBUG: Full message history after append:")
+                for i, msg in enumerate(self.messages):
+                    print(f"DEBUG:   [{i}] {msg.get('role', 'unknown')}: {msg.get('content', '')[:100]}...")
 
             except OutputParserError as e:
                 formatted_answer = handle_output_parser_exception(  # type: ignore[assignment]
@@ -418,6 +432,10 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 if self.messages:
                     print(f"DEBUG: Last message: {self.messages[-1]}")
 
+                print(f"DEBUG: About to call LLM - Message history before call:")
+                for i, msg in enumerate(self.messages):
+                    print(f"DEBUG:   [{i}] {msg.get('role', 'unknown')}: {msg.get('content', '')[:100]}...")
+                
                 answer = await aget_llm_response(
                     llm=self.llm,
                     messages=self.messages,
@@ -431,6 +449,8 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 formatted_answer = process_llm_response(answer, self.use_stop_words)  # type: ignore[assignment]
 
                 if isinstance(formatted_answer, AgentAction):
+                    print(f"DEBUG: Executing tool: {formatted_answer.tool}")
+                    print(f"DEBUG: LLM returned AgentAction with text: {formatted_answer.text[:200]}")
                     fingerprint_context = {}
                     if (
                         self.agent
@@ -443,6 +463,7 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                             )
                         }
 
+                    print(f"DEBUG: Before tool execution - formatted_answer.text: {formatted_answer.text[:200]}")
                     tool_result = await aexecute_tool_and_check_finality(
                         agent_action=formatted_answer,
                         fingerprint_context=fingerprint_context,
@@ -456,11 +477,13 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                         function_calling_llm=self.function_calling_llm,
                         crew=self.crew,
                     )
+                    print(f"DEBUG: Tool result: {tool_result.result[:200]}")
+                    print(f"DEBUG: Tool result_as_answer: {tool_result.result_as_answer}")
                     formatted_answer = self._handle_agent_action(
                         formatted_answer, tool_result
                     )
-                    print(f"DEBUG: Tool execution completed, formatted_answer type: {type(formatted_answer)}")
-                    print(f"DEBUG: formatted_answer.text: {formatted_answer.text[:200]}")
+                    print(f"DEBUG: After _handle_agent_action, formatted_answer type: {type(formatted_answer)}")
+                    print(f"DEBUG: After _handle_agent_action, formatted_answer.text: {formatted_answer.text[:400]}")
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # Append tool observations as user messages, not assistant messages
