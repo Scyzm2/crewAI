@@ -223,6 +223,13 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
         while not isinstance(formatted_answer, AgentFinish):
             try:
                 print(f"DEBUG: Starting iteration {self.iterations}")
+                
+                # Debug: Check if we have a formatted_answer from previous iteration
+                if formatted_answer is not None:
+                    print(f"DEBUG: formatted_answer type: {type(formatted_answer)}")
+                    if hasattr(formatted_answer, 'text'):
+                        print(f"DEBUG: formatted_answer.text: {formatted_answer.text[:200]}")
+                
                 if has_reached_max_iterations(self.iterations, self.max_iter):
                     formatted_answer = handle_max_iterations_exceeded(
                         formatted_answer,
@@ -266,7 +273,12 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     if debug_info in original_content:
                         last_msg['content'] = original_content.replace(debug_info, '')
                 formatted_answer = process_llm_response(answer, self.use_stop_words)  # type: ignore[assignment]
-
+                
+                print(f"DEBUG: After process_llm_response, formatted_answer type: {type(formatted_answer)}")
+                if isinstance(formatted_answer, AgentAction):
+                    print(f"DEBUG: AgentAction.text: {formatted_answer.text[:200]}")
+                    print(f"DEBUG: AgentAction.tool: {formatted_answer.tool}")
+                
                 if isinstance(formatted_answer, AgentAction):
                     # Extract agent fingerprint if available
                     fingerprint_context = {}
@@ -294,9 +306,13 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                         function_calling_llm=self.function_calling_llm,
                         crew=self.crew,
                     )
+                    print(f"DEBUG: About to call _handle_agent_action")
+                    print(f"DEBUG: About to call _handle_agent_action (async)")
                     formatted_answer = self._handle_agent_action(
                         formatted_answer, tool_result
                     )
+                    print(f"DEBUG: After _handle_agent_action (async), formatted_answer type: {type(formatted_answer)}")
+                    print(f"DEBUG: After _handle_agent_action, formatted_answer type: {type(formatted_answer)}")
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # The tool result has already been added as a tool message in _handle_agent_action
@@ -455,7 +471,12 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     if debug_info in original_content:
                         last_msg['content'] = original_content.replace(debug_info, '')
                 formatted_answer = process_llm_response(answer, self.use_stop_words)  # type: ignore[assignment]
-
+                
+                print(f"DEBUG: After process_llm_response (async), formatted_answer type: {type(formatted_answer)}")
+                if isinstance(formatted_answer, AgentAction):
+                    print(f"DEBUG: AgentAction.text (async): {formatted_answer.text[:200]}")
+                    print(f"DEBUG: AgentAction.tool (async): {formatted_answer.tool}")
+                
                 if isinstance(formatted_answer, AgentAction):
                     fingerprint_context = {}
                     if (
