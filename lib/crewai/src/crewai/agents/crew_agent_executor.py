@@ -234,6 +234,11 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
                 enforce_rpm_limit(self.request_within_rpm_limit)
 
+                print(f"DEBUG: About to call LLM (iteration {self.iterations})")
+                print(f"DEBUG: Current message count: {len(self.messages)}")
+                if self.messages:
+                    print(f"DEBUG: Last message: {self.messages[-1]}")
+
                 answer = get_llm_response(
                     llm=self.llm,
                     messages=self.messages,
@@ -247,6 +252,7 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 formatted_answer = process_llm_response(answer, self.use_stop_words)  # type: ignore[assignment]
 
                 if isinstance(formatted_answer, AgentAction):
+                    print(f"DEBUG: Executing tool: {formatted_answer.tool}")
                     # Extract agent fingerprint if available
                     fingerprint_context = {}
                     if (
@@ -260,6 +266,7 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                             )
                         }
 
+                    print(f"DEBUG: About to execute tool and check finality")
                     tool_result = execute_tool_and_check_finality(
                         agent_action=formatted_answer,
                         fingerprint_context=fingerprint_context,
@@ -276,14 +283,22 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     formatted_answer = self._handle_agent_action(
                         formatted_answer, tool_result
                     )
+                    print(f"DEBUG: Tool execution completed, formatted_answer type: {type(formatted_answer)}")
+                    print(f"DEBUG: formatted_answer.text: {formatted_answer.text[:200]}")
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # Append tool observations as user messages, not assistant messages
                 # This prevents "Cannot set add_generation_prompt to True when the last message is from the assistant" error
+                print(f"DEBUG: formatted_answer type: {type(formatted_answer)}")
+                print(f"DEBUG: isinstance(formatted_answer, AgentAction): {isinstance(formatted_answer, AgentAction)}")
                 if isinstance(formatted_answer, AgentAction):
+                    print(f"DEBUG: Appending tool observation as USER message")
+                    print(f"DEBUG: Message text: {formatted_answer.text[:200]}")
                     self._append_message(formatted_answer.text, role="user")  # type: ignore[union-attr,attr-defined]
                 else:
+                    print(f"DEBUG: Appending as ASSISTANT message")
                     self._append_message(formatted_answer.text)  # type: ignore[union-attr,attr-defined]
+                print(f"DEBUG: Last message in history: {self.messages[-1] if self.messages else 'NO MESSAGES'}")
 
             except OutputParserError as e:
                 formatted_answer = handle_output_parser_exception(  # type: ignore[assignment]
@@ -295,6 +310,11 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 )
 
             except Exception as e:
+                print(f"DEBUG: Exception occurred: {e}")
+                print(f"DEBUG: Exception type: {type(e)}")
+                print(f"DEBUG: Current message history:")
+                for i, msg in enumerate(self.messages):
+                    print(f"DEBUG:   Message {i}: {msg}")
                 if e.__class__.__module__.startswith("litellm"):
                     # Do not retry on litellm errors
                     raise e
@@ -393,6 +413,11 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
                 enforce_rpm_limit(self.request_within_rpm_limit)
 
+                print(f"DEBUG: About to call LLM (iteration {self.iterations})")
+                print(f"DEBUG: Current message count: {len(self.messages)}")
+                if self.messages:
+                    print(f"DEBUG: Last message: {self.messages[-1]}")
+
                 answer = await aget_llm_response(
                     llm=self.llm,
                     messages=self.messages,
@@ -434,14 +459,22 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                     formatted_answer = self._handle_agent_action(
                         formatted_answer, tool_result
                     )
+                    print(f"DEBUG: Tool execution completed, formatted_answer type: {type(formatted_answer)}")
+                    print(f"DEBUG: formatted_answer.text: {formatted_answer.text[:200]}")
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # Append tool observations as user messages, not assistant messages
                 # This prevents "Cannot set add_generation_prompt to True when the last message is from the assistant" error
+                print(f"DEBUG: formatted_answer type: {type(formatted_answer)}")
+                print(f"DEBUG: isinstance(formatted_answer, AgentAction): {isinstance(formatted_answer, AgentAction)}")
                 if isinstance(formatted_answer, AgentAction):
+                    print(f"DEBUG: Appending tool observation as USER message")
+                    print(f"DEBUG: Message text: {formatted_answer.text[:200]}")
                     self._append_message(formatted_answer.text, role="user")  # type: ignore[union-attr,attr-defined]
                 else:
+                    print(f"DEBUG: Appending as ASSISTANT message")
                     self._append_message(formatted_answer.text)  # type: ignore[union-attr,attr-defined]
+                print(f"DEBUG: Last message in history: {self.messages[-1] if self.messages else 'NO MESSAGES'}")
 
             except OutputParserError as e:
                 formatted_answer = handle_output_parser_exception(  # type: ignore[assignment]
@@ -453,6 +486,11 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 )
 
             except Exception as e:
+                print(f"DEBUG: Exception occurred: {e}")
+                print(f"DEBUG: Exception type: {type(e)}")
+                print(f"DEBUG: Current message history:")
+                for i, msg in enumerate(self.messages):
+                    print(f"DEBUG:   Message {i}: {msg}")
                 if e.__class__.__module__.startswith("litellm"):
                     raise e
                 if is_context_length_exceeded(e):
