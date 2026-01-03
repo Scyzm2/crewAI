@@ -581,8 +581,10 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             tool_call_id = str(uuid.uuid4())
             
             # Add the assistant message with the tool call
+            # Note: OpenAI API requires assistant messages to have 'content' field even when using tool_calls
             self.messages.append({
                 "role": "assistant",
+                "content": "",  # Required by OpenAI API even when using tool_calls
                 "tool_calls": [
                     {
                         "id": tool_call_id,
@@ -611,7 +613,8 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
         # Add the assistant message with the tool call to the message history
         # This is necessary for proper tool call tracking in the conversation
-        # When using tools, the assistant message should have tool_calls instead of content
+        # When using tools, the assistant message should have tool_calls
+        # Note: OpenAI API requires assistant messages to have 'content' field even when using tool_calls
         with open('/tmp/crewai_debug.log', 'a') as f:
             f.write(f"Before adding assistant message, message count: {len(self.messages)}\n")
             for i, msg in enumerate(self.messages):
@@ -619,6 +622,7 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
         
         self.messages.append({
             "role": "assistant",
+            "content": "",  # Required by OpenAI API even when using tool_calls
             "tool_calls": [
                 {
                     "id": tool_call_id,
