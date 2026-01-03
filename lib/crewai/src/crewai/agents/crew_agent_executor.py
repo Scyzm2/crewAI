@@ -219,16 +219,19 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             Final answer from the agent.
         """
         formatted_answer = None
-        print(f"DEBUG: Starting invoke loop, iteration 0")
+        # Write debug info to a file
+        with open('/tmp/crewai_debug.log', 'a') as f:
+            f.write(f"\n=== Starting invoke loop, iteration 0 ===\n")
+        
         while not isinstance(formatted_answer, AgentFinish):
             try:
-                print(f"DEBUG: Starting iteration {self.iterations}")
-                
-                # Debug: Check if we have a formatted_answer from previous iteration
-                if formatted_answer is not None:
-                    print(f"DEBUG: formatted_answer type: {type(formatted_answer)}")
-                    if hasattr(formatted_answer, 'text'):
-                        print(f"DEBUG: formatted_answer.text: {formatted_answer.text[:200]}")
+                with open('/tmp/crewai_debug.log', 'a') as f:
+                    f.write(f"Starting iteration {self.iterations}\n")
+                    # Debug: Check if we have a formatted_answer from previous iteration
+                    if formatted_answer is not None:
+                        f.write(f"formatted_answer type: {type(formatted_answer)}\n")
+                        if hasattr(formatted_answer, 'text'):
+                            f.write(f"formatted_answer.text: {formatted_answer.text[:200]}\n")
                 
                 if has_reached_max_iterations(self.iterations, self.max_iter):
                     formatted_answer = handle_max_iterations_exceeded(
@@ -274,10 +277,11 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                         last_msg['content'] = original_content.replace(debug_info, '')
                 formatted_answer = process_llm_response(answer, self.use_stop_words)  # type: ignore[assignment]
                 
-                print(f"DEBUG: After process_llm_response, formatted_answer type: {type(formatted_answer)}")
-                if isinstance(formatted_answer, AgentAction):
-                    print(f"DEBUG: AgentAction.text: {formatted_answer.text[:200]}")
-                    print(f"DEBUG: AgentAction.tool: {formatted_answer.tool}")
+                with open('/tmp/crewai_debug.log', 'a') as f:
+                    f.write(f"After process_llm_response, formatted_answer type: {type(formatted_answer)}\n")
+                    if isinstance(formatted_answer, AgentAction):
+                        f.write(f"AgentAction.text: {formatted_answer.text[:200]}\n")
+                        f.write(f"AgentAction.tool: {formatted_answer.tool}\n")
                 
                 if isinstance(formatted_answer, AgentAction):
                     # Extract agent fingerprint if available
@@ -307,12 +311,13 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                         crew=self.crew,
                     )
                     print(f"DEBUG: About to call _handle_agent_action")
-                    print(f"DEBUG: About to call _handle_agent_action (async)")
+                    with open('/tmp/crewai_debug.log', 'a') as f:
+                        f.write(f"About to call _handle_agent_action (async)\n")
                     formatted_answer = self._handle_agent_action(
                         formatted_answer, tool_result
                     )
-                    print(f"DEBUG: After _handle_agent_action (async), formatted_answer type: {type(formatted_answer)}")
-                    print(f"DEBUG: After _handle_agent_action, formatted_answer type: {type(formatted_answer)}")
+                    with open('/tmp/crewai_debug.log', 'a') as f:
+                        f.write(f"After _handle_agent_action (async), formatted_answer type: {type(formatted_answer)}\n")
 
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # The tool result has already been added as a tool message in _handle_agent_action
@@ -571,7 +576,8 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
         Returns:
             Updated action or final answer.
         """
-        print(f"DEBUG: _handle_agent_action called with tool_result: {tool_result.result[:100]}")
+        with open('/tmp/crewai_debug.log', 'a') as f:
+            f.write(f"_handle_agent_action called with tool_result: {tool_result.result[:100]}\n")
         
         # Special case for add_image_tool
         add_image_tool = self._i18n.tools("add_image")
@@ -585,14 +591,16 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
         # Add the assistant message with the tool call to the message history
         # This is necessary for proper tool call tracking in the conversation
-        print(f"DEBUG: Before adding assistant message, message count: {len(self.messages)}")
-        for i, msg in enumerate(self.messages):
-            print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+        with open('/tmp/crewai_debug.log', 'a') as f:
+            f.write(f"Before adding assistant message, message count: {len(self.messages)}\n")
+            for i, msg in enumerate(self.messages):
+                f.write(f"  [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}\n")
         
         self.messages.append({"role": "assistant", "content": formatted_answer.text})
-        print(f"DEBUG: After adding assistant message, message count: {len(self.messages)}")
-        for i, msg in enumerate(self.messages):
-            print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+        with open('/tmp/crewai_debug.log', 'a') as f:
+            f.write(f"After adding assistant message, message count: {len(self.messages)}\n")
+            for i, msg in enumerate(self.messages):
+                f.write(f"  [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}\n")
 
         # Process the tool result using the core handler
         try:
@@ -604,12 +612,14 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 show_logs=self._show_logs,
             )
         except Exception as e:
-            print(f"DEBUG: Exception in handle_agent_action_core: {e}")
+            with open('/tmp/crewai_debug.log', 'a') as f:
+                f.write(f"Exception in handle_agent_action_core: {e}\n")
             import traceback
             traceback.print_exc()
             raise
         
-        print(f"DEBUG: After handle_agent_action_core, result type: {type(result)}")
+        with open('/tmp/crewai_debug.log', 'a') as f:
+            f.write(f"After handle_agent_action_core, result type: {type(result)}\n")
         
         # If the result is still an AgentAction (not finished), we need to add the tool result
         # as a proper tool message to avoid the "Cannot set add_generation_prompt to True
@@ -621,15 +631,17 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 "content": tool_result.result,
             }
             
-            print(f"DEBUG: Before adding tool message, message count: {len(self.messages)}")
-            for i, msg in enumerate(self.messages):
-                print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+            with open('/tmp/crewai_debug.log', 'a') as f:
+                f.write(f"Before adding tool message, message count: {len(self.messages)}\n")
+                for i, msg in enumerate(self.messages):
+                    f.write(f"  [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}\n")
             
             self.messages.append(tool_message)
             
-            print(f"DEBUG: After adding tool message, message count: {len(self.messages)}")
-            for i, msg in enumerate(self.messages):
-                print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+            with open('/tmp/crewai_debug.log', 'a') as f:
+                f.write(f"After adding tool message, message count: {len(self.messages)}\n")
+                for i, msg in enumerate(self.messages):
+                    f.write(f"  [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}\n")
         
         return result
 
