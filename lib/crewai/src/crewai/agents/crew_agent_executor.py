@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import logging
+import uuid
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from pydantic import BaseModel, GetCoreSchemaHandler
@@ -576,17 +577,59 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             and formatted_answer.tool.casefold().strip()
             == add_image_tool.get("name", "").casefold().strip()
         ):
-            self.messages.append({"role": "assistant", "content": tool_result.result})
+            # Generate a unique ID for the tool call
+            tool_call_id = str(uuid.uuid4())
+            
+            # Add the assistant message with the tool call
+            self.messages.append({
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "id": tool_call_id,
+                        "type": "function",
+                        "function": {
+                            "name": formatted_answer.tool,
+                            "arguments": formatted_answer.tool_input,
+                        },
+                    }
+                ],
+            })
+            
+            # Add the tool result as a tool message
+            tool_message = {
+                "role": "tool",
+                "tool_call_id": tool_call_id,
+                "content": tool_result.result,
+            }
+            self.messages.append(tool_message)
+            
             return formatted_answer
+
+        # Generate a unique ID for the tool call
+        # This is needed for proper OpenAI API tool call tracking
+        tool_call_id = str(uuid.uuid4())
 
         # Add the assistant message with the tool call to the message history
         # This is necessary for proper tool call tracking in the conversation
+        # When using tools, the assistant message should have tool_calls instead of content
         with open('/tmp/crewai_debug.log', 'a') as f:
             f.write(f"Before adding assistant message, message count: {len(self.messages)}\n")
             for i, msg in enumerate(self.messages):
                 f.write(f"  [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}\n")
         
-        self.messages.append({"role": "assistant", "content": formatted_answer.text})
+        self.messages.append({
+            "role": "assistant",
+            "tool_calls": [
+                {
+                    "id": tool_call_id,
+                    "type": "function",
+                    "function": {
+                        "name": formatted_answer.tool,
+                        "arguments": formatted_answer.tool_input,
+                    },
+                }
+            ],
+        })
         with open('/tmp/crewai_debug.log', 'a') as f:
             f.write(f"After adding assistant message, message count: {len(self.messages)}\n")
             for i, msg in enumerate(self.messages):
@@ -615,9 +658,11 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
         # as a proper tool message to avoid the "Cannot set add_generation_prompt to True
         # when the last message is from the assistant" error
         if isinstance(result, AgentAction):
-            # Add the tool result as a tool message
+            # Add the tool result as a tool message with the tool_call_id
+            # This is required by the OpenAI API for proper tool call correlation
             tool_message = {
                 "role": "tool",
+                "tool_call_id": tool_call_id,
                 "content": tool_result.result,
             }
             
