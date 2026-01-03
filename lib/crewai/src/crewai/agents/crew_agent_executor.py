@@ -234,11 +234,9 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
                 enforce_rpm_limit(self.request_within_rpm_limit)
                 
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"DEBUG: About to call LLM with {len(self.messages)} messages:")
+                print(f"DEBUG: About to call LLM with {len(self.messages)} messages:")
                 for i, msg in enumerate(self.messages):
-                    logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
                 
                 answer = get_llm_response(
                     llm=self.llm,
@@ -286,21 +284,19 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # The tool result has already been added as a tool message in _handle_agent_action
                 # Only append the formatted_answer text if it's a final answer (AgentFinish)
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"DEBUG: Before final message append, message count: {len(self.messages)}")
+                print(f"DEBUG: Before final message append, message count: {len(self.messages)}")
                 for i, msg in enumerate(self.messages):
-                    logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
                 
                 if isinstance(formatted_answer, AgentFinish):
-                    logger.info(f"DEBUG: Appending final answer as assistant message")
+                    print(f"DEBUG: Appending final answer as assistant message")
                     self._append_message(formatted_answer.text)
                 else:
-                    logger.info(f"DEBUG: Not appending, formatted_answer is AgentAction")
+                    print(f"DEBUG: Not appending, formatted_answer is AgentAction")
                 
-                logger.info(f"DEBUG: After final message append, message count: {len(self.messages)}")
+                print(f"DEBUG: After final message append, message count: {len(self.messages)}")
                 for i, msg in enumerate(self.messages):
-                    logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
 
             except OutputParserError as e:
                 formatted_answer = handle_output_parser_exception(  # type: ignore[assignment]
@@ -410,11 +406,9 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
                 enforce_rpm_limit(self.request_within_rpm_limit)
                 
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"DEBUG: About to call LLM (async) with {len(self.messages)} messages:")
+                print(f"DEBUG: About to call LLM (async) with {len(self.messages)} messages:")
                 for i, msg in enumerate(self.messages):
-                    logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
                 
                 answer = await aget_llm_response(
                     llm=self.llm,
@@ -461,21 +455,19 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 self._invoke_step_callback(formatted_answer)  # type: ignore[arg-type]
                 # The tool result has already been added as a tool message in _handle_agent_action
                 # Only append the formatted_answer text if it's a final answer (AgentFinish)
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"DEBUG: Before final message append (async), message count: {len(self.messages)}")
+                print(f"DEBUG: Before final message append (async), message count: {len(self.messages)}")
                 for i, msg in enumerate(self.messages):
-                    logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
                 
                 if isinstance(formatted_answer, AgentFinish):
-                    logger.info(f"DEBUG: Appending final answer as assistant message (async)")
+                    print(f"DEBUG: Appending final answer as assistant message (async)")
                     self._append_message(formatted_answer.text)
                 else:
-                    logger.info(f"DEBUG: Not appending (async), formatted_answer is AgentAction")
+                    print(f"DEBUG: Not appending (async), formatted_answer is AgentAction")
                 
-                logger.info(f"DEBUG: After final message append (async), message count: {len(self.messages)}")
+                print(f"DEBUG: After final message append (async), message count: {len(self.messages)}")
                 for i, msg in enumerate(self.messages):
-                    logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                    print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
 
             except OutputParserError as e:
                 formatted_answer = handle_output_parser_exception(  # type: ignore[assignment]
@@ -536,16 +528,14 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
 
         # Add the assistant message with the tool call to the message history
         # This is necessary for proper tool call tracking in the conversation
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"DEBUG: Before adding assistant message, message count: {len(self.messages)}")
+        print(f"DEBUG: Before adding assistant message, message count: {len(self.messages)}")
         for i, msg in enumerate(self.messages):
-            logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+            print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
         
         self.messages.append({"role": "assistant", "content": formatted_answer.text})
-        logger.info(f"DEBUG: After adding assistant message, message count: {len(self.messages)}")
+        print(f"DEBUG: After adding assistant message, message count: {len(self.messages)}")
         for i, msg in enumerate(self.messages):
-            logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+            print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
 
         # Process the tool result using the core handler
         result = handle_agent_action_core(
@@ -556,7 +546,7 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             show_logs=self._show_logs,
         )
         
-        logger.info(f"DEBUG: After handle_agent_action_core, result type: {type(result)}")
+        print(f"DEBUG: After handle_agent_action_core, result type: {type(result)}")
         
         # If the result is still an AgentAction (not finished), we need to add the tool result
         # as a proper tool message to avoid the "Cannot set add_generation_prompt to True
@@ -568,15 +558,15 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 "content": tool_result.result,
             }
             
-            logger.info(f"DEBUG: Before adding tool message, message count: {len(self.messages)}")
+            print(f"DEBUG: Before adding tool message, message count: {len(self.messages)}")
             for i, msg in enumerate(self.messages):
-                logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
             
             self.messages.append(tool_message)
             
-            logger.info(f"DEBUG: After adding tool message, message count: {len(self.messages)}")
+            print(f"DEBUG: After adding tool message, message count: {len(self.messages)}")
             for i, msg in enumerate(self.messages):
-                logger.info(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
+                print(f"DEBUG:   [{i}] role={msg.get('role')}, content={msg.get('content', '')[:100]}")
         
         return result
 
