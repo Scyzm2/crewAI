@@ -396,9 +396,47 @@ def process_llm_response(
                         except:
                             # If conversion fails, just use the raw text as a final answer
                             pass
+                    
+                    # If we couldn't parse it and it's not an LLM error message,
+                    # try the fallback logic
+                    pass
 
     # Fallback: try to parse the answer as-is
-    return format_answer(answer)
+    try:
+        return format_answer(answer)
+    except OutputParserError:
+        # If we still can't parse it, check if it's an LLM error message
+        import re
+        
+        # Check if the LLM is returning an error message about its own format
+        # These messages indicate the LLM knows it made a mistake but can't recover
+        error_patterns = [
+            r'I did it wrong',
+            r'Invalid Format',
+            r'I missed the',
+            r'I will do right next',
+            r'Please don\'t use a tool I have already used',
+        ]
+        
+        if any(re.search(pattern, answer, re.IGNORECASE) for pattern in error_patterns):
+            # The LLM is stuck in an error loop
+            # Return an AgentAction with a clear instruction to try again
+            # but WITHOUT any tool call - just a thought
+            return AgentAction(
+                thought="The previous response was not in the correct format. Let me try again.",
+                tool="",
+                tool_input="",
+                text="Thought: The previous response was not in the correct format. Let me try again.\nAction: "
+            )
+        
+        # If it's not an LLM error message, it might be a tool error
+        # Try to extract any useful information and return as a final answer
+        # to break the loop
+        return AgentFinish(
+            thought="Received an error or unparseable response. Providing final answer based on available information.",
+            output=answer,
+            text=answer
+        )
 
 
 
