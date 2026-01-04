@@ -353,15 +353,14 @@ def process_llm_response(
     Returns:
         Either an AgentAction or AgentFinish
     """
-    if not use_stop_words:
-        try:
-            # Preliminary parsing to check for errors.
+    try:
+        # Preliminary parsing to check for errors.
+        return format_answer(answer)
+    except OutputParserError as e:
+        if FINAL_ANSWER_AND_PARSABLE_ACTION_ERROR_MESSAGE in e.error:
+            answer = answer.split("Observation:")[0].strip()
             return format_answer(answer)
-        except OutputParserError as e:
-            if FINAL_ANSWER_AND_PARSABLE_ACTION_ERROR_MESSAGE in e.error:
-                answer = answer.split("Observation:")[0].strip()
-                return format_answer(answer)
-            else:
+        else:
                 # If the format is invalid, try to extract a tool call or final answer
                 # from common LLM formatting mistakes
                 import re
